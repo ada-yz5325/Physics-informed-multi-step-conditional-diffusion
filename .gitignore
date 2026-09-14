@@ -1,0 +1,38 @@
+﻿# Local IDE/editor metadata
+.idea/
+.vscode/
+
+# Python cache and local environments
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.env
+.env.*
+
+# Raw fluid simulation datasets (documentation only)
+diffusion_model/data/*
+!diffusion_model/data/README.md
+
+# Training runs, checkpoints, and generated logs
+diffusion_model/runs/
+TrainState.pth
+Model.pth
+*.ckpt
+log.txt
+events.out.tfevents*
+*.o[0-9]*
+*.e[0-9]*
+
+# Generated result files: keep only lightweight final portfolio outputs
+diffusion_model/results/*
+!diffusion_model/results/final_metrics/
+!diffusion_model/results/final_metrics/**
+!diffusion_model/results/final_figures/
+!diffusion_model/results/final_figures/**
+!diffusion_model/results/README.md
+
+# OS metadata
+.DS_Store
+Thumbs.db

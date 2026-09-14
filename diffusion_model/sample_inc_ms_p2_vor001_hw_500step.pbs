@@ -1,0 +1,74 @@
+#!/bin/bash
+#PBS -N inc_p2_hw_s500
+#PBS -q v1_gpu72
+#PBS -l select=1:ncpus=4:mem=32gb:ngpus=1
+#PBS -l walltime=08:00:00
+#PBS -j oe
+
+PROJECT_ROOT="${PROJECT_ROOT:-${PBS_O_WORKDIR:-$(pwd)}}"
+cd "$PROJECT_ROOT"
+
+echo "Job started at: $(date)"
+echo "Node: $(hostname)"
+echo "Working directory: $(pwd)"
+
+source ./activate_acdm.sh
+
+export DATA_ROOT="${DATA_ROOT:-$PROJECT_ROOT/data}"
+export NUM_WORKERS=2
+export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+
+# ============================================================
+# INC_MS_P2_vor001_HW
+# C = 2
+# P = 2
+# true H2 weight = 0.5 during training
+# temporal loss = OFF
+# vort = 0.01
+# ============================================================
+
+export MODEL_PATH="runs/2D_Inc/128_acdm-r20_puv_vor001_multistep_p2_hw_10h_00/Model.pth"
+export MODEL_LABEL="acdm-r20-inc-ms-p2-vor001-hw-500step"
+export OUT_FOLDER="results/sampling_inc_ms_p2_vor001_hw_500step"
+
+export NUM_EVALS=1
+export ROLLOUT_LENGTH=500
+export TEST_FRAME_START=300
+
+export OUTPUT_HORIZON=2
+export REVERSE_STEPS_PER_CALL=20
+
+# Restore legacy multi-step metadata from checkpoint
+export LOAD_MULTISTEP=1
+export LOAD_HISTORY_STEPS=2
+export LOAD_FUTURE_STEPS=2
+
+export FORCE_RESAMPLE=1
+
+echo
+echo "========================================"
+echo "INC_MS_P2_vor001_HW 500-step sampling"
+echo "========================================"
+echo "Model:               $MODEL_PATH"
+echo "Output:              $OUT_FOLDER"
+echo "Rollout length:      $ROLLOUT_LENGTH"
+echo "History C:           $LOAD_HISTORY_STEPS"
+echo "Output horizon P:    $OUTPUT_HORIZON"
+echo "Reverse steps/call:  $REVERSE_STEPS_PER_CALL"
+echo "========================================"
+
+echo
+echo "Checkpoint:"
+ls -lh "$MODEL_PATH"
+
+echo
+echo "Python / GPU:"
+python -c "import sys; print('python:', sys.executable)"
+python -c "import torch; print('torch:', torch.__version__); print('cuda:', torch.cuda.is_available()); print('device:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU')"
+
+echo
+echo "Starting sampling..."
+python src/sample_models_inc_with_metrics.py
+
+echo
+echo "Job finished at: $(date)"

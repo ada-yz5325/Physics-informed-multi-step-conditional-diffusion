@@ -1,0 +1,49 @@
+#!/bin/bash
+#PBS -N tra_c02_s500
+#PBS -q v1_gpu72
+#PBS -l select=1:ncpus=4:mem=32gb:ngpus=1
+#PBS -l walltime=08:00:00
+#PBS -j oe
+
+PROJECT_ROOT="${PROJECT_ROOT:-${PBS_O_WORKDIR:-$(pwd)}}"
+cd "$PROJECT_ROOT"
+
+echo "Job started at: $(date)"
+echo "Node: $(hostname)"
+
+source ./activate_acdm.sh
+
+export DATA_ROOT="${DATA_ROOT:-$PROJECT_ROOT/data}"
+export NUM_WORKERS=2
+export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+
+# TRA_SS_cont02: lambda_continuity = 0.2
+export MODEL_PATH="runs/2D_Tra/128_acdm-r20_tra_continuity02_10h_00/Model.pth"
+export MODEL_LABEL="acdm-r20-tra-cont02-10h-500step"
+
+export OUT_FOLDER="results/sampling_tra_cont02_10h_500step_metrics"
+
+# Same protocol as TRA_SS_base and TRA_SS_cont001
+export DATASETS="Tralong_500step"
+export NUM_EVALS=1
+export OUTPUT_HORIZON=1
+export REVERSE_STEPS_PER_CALL=20
+
+export PHYSICS_DX=1.0
+export PHYSICS_DY=1.0
+export PHYSICS_DT=1.0
+
+export FORCE_RESAMPLE=1
+
+echo "========================================"
+echo "TRA_SS_cont02 500-step sampling"
+echo "lambda_continuity = 0.2"
+echo "========================================"
+echo "Model: $MODEL_PATH"
+echo "Output: $OUT_FOLDER"
+
+ls -lh "$MODEL_PATH"
+
+python src/sample_models_tra_10h.py
+
+echo "Job finished at: $(date)"

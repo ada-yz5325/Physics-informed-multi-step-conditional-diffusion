@@ -1,0 +1,39 @@
+#!/bin/bash
+#PBS -N tra_cont_10h
+#PBS -q v1_gpu72
+#PBS -l select=1:ncpus=4:mem=32gb:ngpus=1
+#PBS -l walltime=12:00:00
+#PBS -j oe
+
+PROJECT_ROOT="${PROJECT_ROOT:-${PBS_O_WORKDIR:-$(pwd)}}"
+cd "$PROJECT_ROOT"
+
+source ./activate_acdm.sh
+
+export DATA_ROOT="${DATA_ROOT:-$PROJECT_ROOT/data}"
+
+export EPOCHS=70
+export NUM_WORKERS=4
+export TEST_INTERVAL=2
+export RUN_INITIAL_TEST=0
+
+# Physics-aware Transonic loss
+export CONTINUITY_LOSS_WEIGHT=0.01
+
+# Same discrete convention as evaluation
+export CONTINUITY_DX=1.0
+export CONTINUITY_DY=1.0
+export CONTINUITY_DT=1.0
+
+# No unrelated losses
+export TEMPORAL_LOSS_WEIGHT=0.0
+
+export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+
+echo "Job started at: $(date)"
+echo "Node: $(hostname)"
+echo "Continuity lambda: $CONTINUITY_LOSS_WEIGHT"
+
+python src/training_diffusion_tra_10h_continuity.py
+
+echo "Job finished at: $(date)"

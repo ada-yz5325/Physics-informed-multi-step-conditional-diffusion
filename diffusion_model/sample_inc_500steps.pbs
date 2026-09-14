@@ -1,0 +1,52 @@
+#!/bin/bash
+#PBS -N sample500
+#PBS -q v1_gpu72
+#PBS -l select=1:ncpus=4:mem=32gb:ngpus=1
+#PBS -l walltime=08:00:00
+#PBS -j oe
+
+PROJECT_ROOT="${PROJECT_ROOT:-${PBS_O_WORKDIR:-$(pwd)}}"
+cd "$PROJECT_ROOT"
+
+echo "Job started at: $(date)"
+echo "Node: $(hostname)"
+echo "Working directory: $(pwd)"
+
+source ./activate_acdm.sh
+
+export DATA_ROOT="${DATA_ROOT:-$PROJECT_ROOT/data}"
+export NUM_WORKERS=2
+export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+
+# Output folder for this 500-step baseline sampling experiment
+export OUT_FOLDER=results/sampling_puv_phys_10h_500step_relL2
+
+# Use the existing 10h baseline checkpoint
+export MODEL_PATH=runs/2D_Inc/128_acdm-r20_puv_phys_10h_00/Model.pth
+export MODEL_FOLDER=runs/2D_Inc
+export MODEL_GLOB="128_acdm-r20_puv_phys_10h*/Model.pth"
+export MODEL_LABEL=acdm-r20-puv-phys-10h-500step
+
+# 500-step rollout setting
+# frameEnd = TEST_FRAME_START + 2 * ROLLOUT_LENGTH
+# 300 + 2*500 = 1300, close to the full available sequence length
+export ROLLOUT_LENGTH=500
+export TEST_FRAME_START=300
+export NUM_EVALS=1
+export OUTPUT_HORIZON=1
+export REVERSE_STEPS_PER_CALL=20
+
+# Force new sampling instead of reusing old .npz files
+export FORCE_RESAMPLE=1
+
+echo "Python check:"
+python -c "import sys; print(sys.executable)"
+python -c "import torch; print('torch:', torch.__version__); print('cuda:', torch.cuda.is_available()); print('device count:', torch.cuda.device_count()); print('device:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU')"
+
+echo "Checking model path:"
+ls -lh "$MODEL_PATH"
+
+echo "Running 500-step baseline sampling..."
+python src/sample_models_inc_with_metrics.py
+
+echo "Job finished at: $(date)"

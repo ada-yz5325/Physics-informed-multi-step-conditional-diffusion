@@ -1,0 +1,59 @@
+#!/bin/bash
+#PBS -N inc_p2_vor_thw_s500
+#PBS -q v1_gpu72
+#PBS -l select=1:ncpus=4:mem=32gb:ngpus=1
+#PBS -l walltime=08:00:00
+#PBS -j oe
+
+PROJECT_ROOT="${PROJECT_ROOT:-${PBS_O_WORKDIR:-$(pwd)}}"
+cd "$PROJECT_ROOT"
+
+echo "Job started at: $(date)"
+echo "Node: $(hostname)"
+
+source ./activate_acdm.sh
+
+export DATA_ROOT="${DATA_ROOT:-$PROJECT_ROOT/data}"
+export NUM_WORKERS=2
+export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+
+# Model
+export MODEL_PATH="runs/2D_Inc/128_acdm-r20_puv_vor001_multistep_p2_10h_temporal_hw_00/Model.pth"
+export MODEL_LABEL="acdm-r20-inc-ms-p2-vor001-thw-500step"
+export OUT_FOLDER="results/sampling_inc_ms_p2_vor001_thw_500step"
+
+# Same INC 500-step evaluation protocol
+export ROLLOUT_LENGTH=500
+export TEST_FRAME_START=300
+export NUM_EVALS=1
+
+# P = 2
+export OUTPUT_HORIZON=2
+export REVERSE_STEPS_PER_CALL=20
+
+# Restore legacy multi-step metadata
+export LOAD_MULTISTEP=1
+export LOAD_HISTORY_STEPS=2
+export LOAD_FUTURE_STEPS=2
+
+export FORCE_RESAMPLE=1
+
+echo "========================================"
+echo "INC_MS_P2_vor001_THW"
+echo "C = 2"
+echo "P = 2"
+echo "lambda_vort = 0.01"
+echo "lambda_div  = 0"
+echo "THW = ON during training"
+echo "rollout = 500"
+echo "frame start = 300"
+echo "========================================"
+
+echo "Checkpoint:"
+ls -lh "$MODEL_PATH"
+
+python -c "import torch; print('cuda:', torch.cuda.is_available()); print('device:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU')"
+
+python src/sample_models_inc_with_metrics.py
+
+echo "Job finished at: $(date)"

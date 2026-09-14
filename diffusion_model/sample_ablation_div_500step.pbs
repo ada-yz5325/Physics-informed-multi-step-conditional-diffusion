@@ -1,0 +1,36 @@
+#!/bin/bash
+#PBS -N smp_div500
+#PBS -q v1_gpu72
+#PBS -l select=1:ncpus=4:mem=32gb:ngpus=1
+#PBS -l walltime=08:00:00
+#PBS -j oe
+
+PROJECT_ROOT="${PROJECT_ROOT:-${PBS_O_WORKDIR:-$(pwd)}}"
+cd "$PROJECT_ROOT"
+source ./activate_acdm.sh
+
+echo "Job started at: $(date)"
+echo "Node: $(hostname)"
+echo "Python: $(which python)"
+
+export DATA_ROOT="${DATA_ROOT:-$PROJECT_ROOT/data}"
+
+export MODEL_PATH=runs/2D_Inc/128_acdm-r20_puv_phys_ablation_div_10h_00/Model.pth
+export OUT_FOLDER=results/ablation_div_500step
+export MODEL_LABEL=ablation-divergence-500step
+
+export ROLLOUT_LENGTH=500
+export TEST_FRAME_START=300
+export NUM_EVALS=1
+export OUTPUT_HORIZON=1
+export REVERSE_STEPS_PER_CALL=20
+export FORCE_RESAMPLE=1
+
+echo "Sampling setting:"
+echo "  MODEL_PATH=${MODEL_PATH}"
+echo "  OUT_FOLDER=${OUT_FOLDER}"
+echo "  MODEL_LABEL=${MODEL_LABEL}"
+
+python src/sample_models_inc_with_metrics.py
+
+echo "Job finished at: $(date)"

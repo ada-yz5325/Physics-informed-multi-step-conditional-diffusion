@@ -1,0 +1,64 @@
+#!/bin/bash
+#PBS -N inc_p2_vor_hw
+#PBS -q v1_gpu72
+#PBS -l select=1:ncpus=4:mem=32gb:ngpus=1
+#PBS -l walltime=12:00:00
+#PBS -j oe
+
+PROJECT_ROOT="${PROJECT_ROOT:-${PBS_O_WORKDIR:-$(pwd)}}"
+cd "$PROJECT_ROOT"
+
+echo "Job started at: $(date)"
+echo "Node: $(hostname)"
+echo "Working directory: $(pwd)"
+
+source ./activate_acdm.sh
+
+export DATA_ROOT="${DATA_ROOT:-$PROJECT_ROOT/data}"
+export NUM_WORKERS=4
+export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+
+# INC_MS_P2_vor001_HW
+#
+# C = 2
+# P = 2
+#
+# Vorticity:
+#   lambda_vort = 0.01
+#
+# True horizon weighting:
+#   H1 = 1.0
+#   H2 = 0.5
+#
+# IMPORTANT:
+#   Temporal loss OFF
+
+export TEMPORAL_LOSS_WEIGHT=0.0
+
+export HORIZON_T2_WEIGHT=0.5
+export HW_DIAGNOSTIC=1
+
+export CONTINUITY_LOSS_WEIGHT=0.0
+
+echo
+echo "========================================"
+echo "INC_MS_P2_vor001_HW"
+echo "========================================"
+echo "C = 2"
+echo "P = 2"
+echo "lambda_vort = 0.01"
+echo "lambda_div  = 0"
+echo "temporal loss = OFF"
+echo "H1 weight = 1.0"
+echo "H2 weight = $HORIZON_T2_WEIGHT"
+echo "========================================"
+
+python -c "import torch; print('cuda:', torch.cuda.is_available()); print('device:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU')"
+
+python -m py_compile \
+src/training_diffusion_inc_multistep_p2_vor001_hw_10h.py \
+src/turbpred/trainer_diffusion.py
+
+python src/training_diffusion_inc_multistep_p2_vor001_hw_10h.py
+
+echo "Job finished at: $(date)"

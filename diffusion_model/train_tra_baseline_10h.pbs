@@ -1,0 +1,32 @@
+#!/bin/bash
+#PBS -N tra_base_10h
+#PBS -q v1_gpu72
+#PBS -l select=1:ncpus=4:mem=32gb:ngpus=1
+#PBS -l walltime=12:00:00
+#PBS -j oe
+
+PROJECT_ROOT="${PROJECT_ROOT:-${PBS_O_WORKDIR:-$(pwd)}}"
+cd "$PROJECT_ROOT"
+
+source ./activate_acdm.sh
+
+export DATA_ROOT="${DATA_ROOT:-$PROJECT_ROOT/data}"
+export EPOCHS=70
+export NUM_WORKERS=4
+export TEST_INTERVAL=2
+export RUN_INITIAL_TEST=0
+export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+
+echo "Job started at: $(date)"
+echo "Node: $(hostname)"
+echo "Python: $(which python)"
+python --version
+
+echo ""
+echo "Running full Transonic single-step baseline training..."
+echo "EPOCHS=$EPOCHS"
+
+python src/training_diffusion_tra_10h.py
+
+echo ""
+echo "Job finished at: $(date)"

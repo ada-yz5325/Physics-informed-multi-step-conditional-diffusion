@@ -1,0 +1,42 @@
+#!/bin/bash
+#PBS -N inc_phys003
+#PBS -q v1_gpu72
+#PBS -l select=1:ncpus=4:mem=32gb:ngpus=1
+#PBS -l walltime=12:00:00
+#PBS -j oe
+
+PROJECT_ROOT="${PROJECT_ROOT:-${PBS_O_WORKDIR:-$(pwd)}}"
+cd "$PROJECT_ROOT"
+
+source ./activate_acdm.sh
+
+export DATA_ROOT="${DATA_ROOT:-$PROJECT_ROOT/data}"
+
+export NUM_WORKERS=4
+export TEST_INTERVAL=2
+export RUN_INITIAL_TEST=0
+
+# Inc physics diagnostic
+export PHYSICS_EPOCH_DIAGNOSTIC=1
+
+# Disable unrelated additional objectives
+export TEMPORAL_LOSS_WEIGHT=0.0
+export CONTINUITY_LOSS_WEIGHT=0.0
+
+export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+
+echo "===================================="
+echo "Inc physics-rebalanced training"
+echo "regDiv  = 0.003"
+echo "regVort = 0.003"
+echo "epochs  = 70"
+echo "===================================="
+
+echo "Job started at: $(date)"
+echo "Node: $(hostname)"
+echo "Using python: $(which python)"
+python --version
+
+python src/training_diffusion_inc_phys003_10h.py
+
+echo "Job finished at: $(date)"

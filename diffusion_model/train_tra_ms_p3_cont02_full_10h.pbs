@@ -1,0 +1,52 @@
+#!/bin/bash
+#PBS -N tra_p3x3_full
+#PBS -q v1_gpu72
+#PBS -l select=1:ncpus=4:mem=32gb:ngpus=1
+#PBS -l walltime=16:00:00
+#PBS -j oe
+
+PROJECT_ROOT="${PROJECT_ROOT:-${PBS_O_WORKDIR:-$(pwd)}}"
+cd "$PROJECT_ROOT"
+
+echo "Job started at: $(date)"
+echo "Node: $(hostname)"
+echo "Working directory: $(pwd)"
+
+source ./activate_acdm.sh
+
+export DATA_ROOT="${DATA_ROOT:-$PROJECT_ROOT/data}"
+export NUM_WORKERS=4
+export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+
+export CONTINUITY_LOSS_WEIGHT=0.2
+export CONTINUITY_DX=1.0
+export CONTINUITY_DY=1.0
+export CONTINUITY_DT=1.0
+
+export TEMPORAL_LOSS_WEIGHT=0.0
+export HORIZON_T2_WEIGHT=1.0
+export MULTISTEP_CONT_DIAGNOSTIC=1
+
+echo
+echo "========================================"
+echo "TRA_MS_P3_cont02"
+echo "TRUE 3 -> 3"
+echo "C = 3"
+echo "P = 3"
+echo "continuity lambda = $CONTINUITY_LOSS_WEIGHT"
+echo "FULL continuity = H1-H3"
+echo "temporal loss = OFF"
+echo "horizon weighting = OFF"
+echo "========================================"
+
+python -c "import torch; print('torch:',torch.__version__); print('cuda:',torch.cuda.is_available()); print('device:',torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU')"
+
+python -m py_compile \
+src/training_diffusion_tra_multistep_p3_cont02_full_10h.py \
+src/turbpred/trainer_diffusion_tra_fullcont.py \
+src/turbpred/model.py \
+src/turbpred/model_diffusion.py
+
+python src/training_diffusion_tra_multistep_p3_cont02_full_10h.py
+
+echo "Job finished at: $(date)"

@@ -1,0 +1,49 @@
+#!/bin/bash
+#PBS -N inc_d003_v001
+#PBS -q v1_gpu72
+#PBS -l select=1:ncpus=4:mem=32gb:ngpus=1
+#PBS -l walltime=10:00:00
+#PBS -j oe
+
+PROJECT_ROOT="${PROJECT_ROOT:-${PBS_O_WORKDIR:-$(pwd)}}"
+cd "$PROJECT_ROOT"
+
+echo "Job started at: $(date)"
+echo "Node: $(hostname)"
+echo "Working directory: $(pwd)"
+
+source ./activate_acdm.sh
+
+export DATA_ROOT="${DATA_ROOT:-$PROJECT_ROOT/data}"
+export NUM_WORKERS=2
+export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+
+# Experiment:
+# weak divergence + strong vorticity
+export MODEL_NAME="2D_Inc/128_acdm-r20_puv_phys_div003_vort001_10h"
+
+export REG_DIV=0.003
+export REG_VORT=0.01
+
+# Make sure unrelated experimental losses are disabled
+export TEMPORAL_LOSS_WEIGHT=0.0
+export CONTINUITY_LOSS_WEIGHT=0.0
+
+echo "========================================"
+echo "INC physics-weight experiment"
+echo "MODEL_NAME = $MODEL_NAME"
+echo "REG_DIV    = $REG_DIV"
+echo "REG_VORT   = $REG_VORT"
+echo "========================================"
+
+echo "Python / GPU check:"
+python -c "import sys; print('python:', sys.executable)"
+python -c "import torch; print('torch:', torch.__version__); print('cuda:', torch.cuda.is_available()); print('device:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU')"
+
+echo "Checking training script..."
+python -m py_compile src/training_diffusion_inc_ablation_10h.py
+
+echo "Starting training..."
+python src/training_diffusion_inc_ablation_10h.py
+
+echo "Job finished at: $(date)"
